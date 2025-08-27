@@ -27,6 +27,7 @@ export default function Home() {
   const [refreshingLoans, setRefreshingLoans] = useState(false);
   const [availableLoans, setAvailableLoans] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
+  const [userBalance, setUserBalance] = useState<number>(0);
 
   // Initialize anchor client when wallet connects
   useEffect(() => {
@@ -44,11 +45,12 @@ export default function Home() {
     }
   }, [connected, publicKey, wallet]);
 
-  // Fetch available loans
+  // Fetch available loans and user balance
   useEffect(() => {
     if (anchorClient) {
       fetchAvailableLoans();
       fetchUserLoans();
+      fetchUserBalance();
     }
   }, [anchorClient, publicKey]);
 
@@ -79,6 +81,16 @@ export default function Home() {
       console.log('User loans:', userLoans);
     } catch (error) {
       console.error('Error fetching user loans:', error);
+    }
+  };
+
+  const fetchUserBalance = async () => {
+    if (!anchorClient || !publicKey) return;
+    try {
+      const balance = await anchorClient.getBalance();
+      setUserBalance(balance);
+    } catch (error) {
+      console.error('Error fetching user balance:', error);
     }
   };
 
@@ -116,12 +128,20 @@ export default function Home() {
 
     setLoading(true);
     try {
+      toast.loading('Processing lending transaction...', { id: 'lend' });
       const tx = await anchorClient.lendBorrower(loanAddress);
-      toast.success(`Lending transaction completed! Transaction: ${tx}`);
-      await fetchAvailableLoans();
+      toast.success(`Lending transaction completed! Transaction: ${tx.slice(0, 8)}...`, { id: 'lend' });
+      
+      // Remove the loan from available loans after successful lending
+      setAvailableLoans(prev => prev.filter(loan => loan.publicKey.toString() !== loanAddress));
+      
+      // Refresh the available loans list
+      setTimeout(async () => {
+        await fetchAvailableLoans();
+      }, 1000);
     } catch (error: any) {
       console.error('Lend error:', error);
-      toast.error(error.message || 'Transaction failed. Please try again.');
+      toast.error(error.message || 'Transaction failed. Please try again.', { id: 'lend' });
     } finally {
       setLoading(false);
     }
@@ -172,7 +192,15 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
+              className="flex items-center space-x-4"
             >
+              {connected && userBalance > 0 && (
+                <div className="bg-white dark:bg-dark-800 px-3 py-2 rounded-lg shadow-sm">
+                  <p className="text-sm text-dark-600 dark:text-dark-300">
+                    Balance: <span className="font-semibold text-primary-600">{(userBalance / 1000000000).toFixed(4)} SOL</span>
+                  </p>
+                </div>
+              )}
               <WalletConnect onConnect={(address) => console.log('Connected:', address)} />
             </motion.div>
           </div>
@@ -349,7 +377,10 @@ export default function Home() {
                                   NFT: {loan.account.nftMint.toString().slice(0, 8)}...
                                 </p>
                                 <p className="text-sm font-medium">
-                                  Amount: {loan.account.amount.toString()} lamports
+                                  Amount: {(loan.account.amount / 1000000000).toFixed(2)} SOL
+                                </p>
+                                <p className="text-xs text-dark-500 dark:text-dark-400">
+                                  Borrower: {loan.account.borrower.toString().slice(0, 8)}...
                                 </p>
                               </div>
                               <button
@@ -415,7 +446,7 @@ export default function Home() {
                                   NFT: {loan.account.nftMint.toString().slice(0, 8)}...
                                 </p>
                                 <p className="text-sm font-medium">
-                                  Amount: {loan.account.amount.toString()} lamports
+                                  Amount: {(loan.account.amount / 1000000000).toFixed(2)} SOL
                                 </p>
                               </div>
                               <button

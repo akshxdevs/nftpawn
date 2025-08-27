@@ -102,6 +102,12 @@ export class AnchorClient {
         throw new Error('This loan is not active');
       }
       
+      // Check if user has enough SOL balance
+      const balance = await this.connection.getBalance(this.wallet.publicKey);
+      if (balance < loanAccount.amount) {
+        throw new Error(`Insufficient balance. You need ${(loanAccount.amount / 1000000000).toFixed(2)} SOL but have ${(balance / 1000000000).toFixed(2)} SOL`);
+      }
+      
       // Create a transaction to transfer SOL to the borrower
       const transaction = new Transaction();
       
@@ -228,6 +234,20 @@ export class AnchorClient {
     } catch (error) {
       console.error('Get all loans error:', error);
       return [];
+    }
+  }
+
+  async getBalance(): Promise<number> {
+    try {
+      if (!this.wallet.publicKey) {
+        throw new Error('Wallet not connected');
+      }
+      
+      const balance = await this.connection.getBalance(this.wallet.publicKey);
+      return balance;
+    } catch (error) {
+      console.error('Get balance error:', error);
+      throw error;
     }
   }
 } 
