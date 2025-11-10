@@ -1,6 +1,0 @@
-target/** linguist-vendored
-app/** linguist-vendored
-tests/** linguist-vendored
-lib/** linguist-vendored
-components/** linguist-vendored
-types/** linguist-vendored
