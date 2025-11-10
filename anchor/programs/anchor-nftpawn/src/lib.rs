@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{self, Token, Transfer},
 };
 
-declare_id!("GPCJ1xf8hidp64X5xRGUEdq171bgXoRVvBdLM7VNidoU");
+declare_id!("48dhjY4ZmBeJqx1cGpoZhH6wCCboM4PkzEiKVEBFHjBK");
 
 #[program]
 pub mod anchor_nftpawn {
